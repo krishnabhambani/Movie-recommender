@@ -66,11 +66,11 @@ def load_artifacts():
 
 
 # ================= TMDB POSTER =================
-def fetch_poster(movie_id):
-    if not movie_id or not TMDB_API_KEY:
+def fetch_poster(id):
+    if not id or not TMDB_API_KEY:
         return PLACEHOLDER
     try:
-        url = f"https://api.themoviedb.org/3/movie/{movie_id}?api_key={TMDB_API_KEY}"
+        url = f"https://api.themoviedb.org/3/movie/{id}?api_key={TMDB_API_KEY}"
         r = requests.get(url, timeout=5)
         if r.status_code == 200:
             poster = r.json().get("poster_path")
@@ -98,9 +98,9 @@ def recommend(movie: str, movies, similarity, top_k: int = 5):
     recommended_posters = []
 
     for i in distances[1: top_k + 1]:
-        movie_id = movies.iloc[i[0]]["id"]   # ✅ FIX HERE
+        id = movies.iloc[i[0]]["id"]   # ✅ FIX HERE
         recommended_names.append(movies.iloc[i[0]]["title"])
-        recommended_posters.append(fetch_poster(movie_id))
+        recommended_posters.append(fetch_poster(id))
 
     return recommended_names, recommended_posters
 
@@ -176,9 +176,9 @@ def main():
     )
 
     # ---------- HELPER ----------
-    def get_local_details(movie_id):
+    def get_local_details(id):
         import ast, pandas as pd
-        row = movies_csv[movies_csv["id"] == int(movie_id)]
+        row = movies_csv[movies_csv["id"] == int(id)]
         if row.empty:
             return {}
         row = row.iloc[0]
@@ -206,7 +206,7 @@ def main():
 
         # ===== STEP 2: SELECTED MOVIE DETAILS =====
         sel_idx = movies[movies["title"] == selected_movie].index[0]
-        sel_id = movies.iloc[sel_idx]["movie_id"]
+        sel_id = movies.iloc[sel_idx]["id"]
         sel_details = get_local_details(sel_id)
 
         st.subheader(selected_movie)
@@ -229,7 +229,7 @@ def main():
         for name, poster in zip(names, posters):
             try:
                 r = movies[movies["title"] == name].index[0]
-                mid = movies.iloc[r]["movie_id"]
+                mid = movies.iloc[r]["id"]
             except:
                 mid = None
 
