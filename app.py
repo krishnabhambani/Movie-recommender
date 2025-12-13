@@ -2,6 +2,10 @@ import os
 import pickle
 import requests
 import streamlit as st
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+import pandas as pd
+import ast
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -11,26 +15,22 @@ TMDB_IMG_BASE = "https://image.tmdb.org/t/p/w500"
 PLACEHOLDER = "https://via.placeholder.com/300x450?text=No+Image"
 
 # ================= LOAD DATA =================
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
-import pandas as pd
-import ast
+
 
 @st.cache_data
 def load_artifacts():
     movies = pd.read_csv("Data/tmdb_5000_movies.csv")
+    credits = pd.read_csv("Data/tmdb_5000_credits.csv")
 
-    # Parse genres, keywords, cast, crew
+    # Merge movies + credits
+    movies = movies.merge(credits, on="title")
+
+    # Helper functions
     def parse(obj):
         return [i["name"] for i in ast.literal_eval(obj)]
 
-    movies["genres"] = movies["genres"].apply(parse)
-    movies["keywords"] = movies["keywords"].apply(parse)
-
     def parse_cast(obj):
-        return [i["name"] for i in ast.literal_eval(obj)][:3]
-
-    movies["cast"] = movies["cast"].apply(parse_cast)
+        return [i["name"] for i in ast.literal_eval(obj)[:3]]
 
     def parse_director(obj):
         for i in ast.literal_eval(obj):
@@ -38,23 +38,25 @@ def load_artifacts():
                 return [i["name"]]
         return []
 
+    # Apply parsing
+    movies["genres"] = movies["genres"].apply(parse)
+    movies["keywords"] = movies["keywords"].apply(parse)
+    movies["cast"] = movies["cast"].apply(parse_cast)
     movies["crew"] = movies["crew"].apply(parse_director)
 
+    # Create tags
     movies["tags"] = (
-        movies["overview"].fillna("") +
-        " " +
-        movies["genres"].apply(lambda x: " ".join(x)) +
-        " " +
-        movies["keywords"].apply(lambda x: " ".join(x)) +
-        " " +
-        movies["cast"].apply(lambda x: " ".join(x)) +
-        " " +
+        movies["overview"].fillna("") + " " +
+        movies["genres"].apply(lambda x: " ".join(x)) + " " +
+        movies["keywords"].apply(lambda x: " ".join(x)) + " " +
+        movies["cast"].apply(lambda x: " ".join(x)) + " " +
         movies["crew"].apply(lambda x: " ".join(x))
     )
 
     movies = movies[["id", "title", "tags"]]
     movies["tags"] = movies["tags"].str.lower()
 
+    # Vectorization
     cv = CountVectorizer(max_features=5000, stop_words="english")
     vectors = cv.fit_transform(movies["tags"]).toarray()
 
@@ -161,6 +163,7 @@ def main():
 
     movies, similarity = load_artifacts()
     movies_csv = pd.read_csv("Data/tmdb_5000_movies.csv")
+
 
 
     # ---------- SELECT MOVIE ----------
