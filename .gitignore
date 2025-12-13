@@ -1,1 +1,5 @@
 .env
+# Ignore large ML artifacts
+artificats/*.pkl
+.env
+__pycache__/
