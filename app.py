@@ -82,10 +82,10 @@ def fetch_poster(movie_id):
 
 
 # ================= RECOMMENDATION =================
-def recommend(movie, movies, similarity, top_k=5):
+def recommend(movie: str, movies, similarity, top_k: int = 5):
     try:
         idx = movies[movies["title"] == movie].index[0]
-    except:
+    except Exception:
         return [], []
 
     distances = sorted(
@@ -94,13 +94,16 @@ def recommend(movie, movies, similarity, top_k=5):
         key=lambda x: x[1]
     )
 
-    names, posters = [], []
-    for i in distances[1: top_k + 1]:
-        mid = movies.iloc[i[0]]["movie_id"]
-        names.append(movies.iloc[i[0]]["title"])
-        posters.append(fetch_poster(mid))
+    recommended_names = []
+    recommended_posters = []
 
-    return names, posters
+    for i in distances[1: top_k + 1]:
+        movie_id = movies.iloc[i[0]]["id"]   # ✅ FIX HERE
+        recommended_names.append(movies.iloc[i[0]]["title"])
+        recommended_posters.append(fetch_poster(movie_id))
+
+    return recommended_names, recommended_posters
+
 
 
 # ================= MAIN APP =================
